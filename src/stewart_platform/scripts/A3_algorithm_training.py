@@ -273,7 +273,7 @@ def main():
     rospy.init_node('DRL Agent')
     env_name = 'StewartPose-v0'
     agent = Agent(env_name)
-    agent.train(max_episodes=2000)
+    agent.train(max_episodes=500)
 
 
 if __name__ == "__main__":

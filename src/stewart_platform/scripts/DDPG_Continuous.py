@@ -230,7 +230,7 @@ def main():
     env_name = 'StewartPose-v0'
     env = gym.make(env_name)
     agent = Agent(env)
-    agent.train(max_episodes=2000)
+    agent.train(max_episodes=500)
 
 
 if __name__ == "__main__":
