@@ -5,3 +5,4 @@ build
 .catkin_tools
 .vscode
 src/stewart_platform/plugin/build
+src/openai_ros
