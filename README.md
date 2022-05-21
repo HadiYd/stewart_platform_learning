@@ -1,11 +1,11 @@
 # Stewart Platform Learning
 Set of tools and environments to implement Deep Reinforcement Learning (DRL) algorithms on Stewart Platfrom by parametric simulation in Gazebo and ROS.
 
-<p align="center">
+<center>
 
 ![](https://github.com/HadiYd/stewart_platform_learning/blob/main/gif/stewart_learning_.gif)
 
-</p>
+</center>
 
 ## Cloning the project as a workspace
 ```
