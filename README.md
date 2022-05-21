@@ -37,7 +37,7 @@ killall -9 gzserver
 ```
 
 ## running the deep reinforcement learning training scripts
-I use wandb to log all the rewards and performance metrics. First pip install it the create a free account. 
+I use wandb to log all the rewards and performance metrics. First pip install it, them create a free account to use it. 
 ```
 pip install wandb
 
