@@ -1,7 +1,7 @@
 gazebo_controller_init:
-  propor: 10000
-  integr: 1000
-  deriv: 100
+  propor: 10
+  integr: 10
+  deriv: 1
   init_legs_length: 0.3
 
 stewart: 
