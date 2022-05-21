@@ -53,7 +53,7 @@ wandb login
 **Action** Continuous<br>
 
 
-#### running the DDPG algorithm
+#### Running the DDPG algorithm:
 ```
 rosrun stewart_platform DDPG_Continuous.py 
 ```
@@ -65,7 +65,7 @@ rosrun stewart_platform DDPG_Continuous.py
 **Method** ON-Policy / Temporal-Diffrence / Model-Free<br>
 **Action** Discrete, Continuous<br>
 
-#### running the DDPG algorithm
+#### Running the DDPG algorithm:
 ```
 rosrun stewart_platform A3_algorithm_training.py 
 ```
@@ -77,7 +77,7 @@ rosrun stewart_platform A3_algorithm_training.py
 **Method** ON-Policy / Temporal-Diffrence / Model-Free<br>
 **Action** Discrete, Continuous<br>
 
-### running the DDPG algorithm
+### Running the DDPG algorithm:
 ```
 rosrun stewart_platform PPO_Continuous.py 
 ```
