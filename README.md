@@ -65,7 +65,7 @@ rosrun stewart_platform DDPG_Continuous.py
 **Method** ON-Policy / Temporal-Diffrence / Model-Free<br>
 **Action** Discrete, Continuous<br>
 
-#### Running the DDPG algorithm:
+#### Running the A3C algorithm:
 ```
 rosrun stewart_platform A3_algorithm_training.py 
 ```
@@ -77,7 +77,7 @@ rosrun stewart_platform A3_algorithm_training.py
 **Method** ON-Policy / Temporal-Diffrence / Model-Free<br>
 **Action** Discrete, Continuous<br>
 
-### Running the DDPG algorithm:
+### Running the PPO algorithm:
 ```
 rosrun stewart_platform PPO_Continuous.py 
 ```
