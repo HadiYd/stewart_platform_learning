@@ -39,7 +39,7 @@ In case of an error in the subsequent launches, kill the previous running Gazebo
 killall -9 gzserver
 ```
 
-## running the deep reinforcement learning training scripts
+## Running the deep reinforcement learning training scripts
 I use wandb to log all the rewards and performance metrics. First pip install it, then create a free account to use it. 
 ```
 pip install wandb
