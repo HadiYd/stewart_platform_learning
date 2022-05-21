@@ -8,7 +8,7 @@ git clone https://github.com/HadiYd/stewart_platform_learning.git
 ```
 
 ## Build the controller plugin for controlling joints and changing the PID values.
-> credit: [ros_sdf](https://github.com/daniel-s-ingram/ros_sdf) with modification of adding PID section to the code.
+> credit by: [ros_sdf](https://github.com/daniel-s-ingram/ros_sdf) with modification of adding PID section to the code.
 ```
 cd src/stewart_platform/plugin
 mkdir build
@@ -43,7 +43,7 @@ pip install wandb
 
 wandb login
 ```
-**Credit repo of DRL algorithms:* [Deep Reinforcement Learning in TensorFlow2](https://github.com/marload/DeepRL-TensorFlow2)
+> **DRL algorithms credit by:** [Deep Reinforcement Learning in TensorFlow2](https://github.com/marload/DeepRL-TensorFlow2)
 
 ### DDPG
 
