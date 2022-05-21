@@ -25,3 +25,8 @@ catkin build
 source devel/setup.bash
 rosdep install openai_ros
 ```
+
+## Spawn the Stewart platform in Gazebo using launch file
+```
+roslaunch stewart_platform stewart.launch 
+```
