@@ -13,8 +13,6 @@ import numpy as np
 import reaching_pose_env
 import rospy
 
-from convert_shapes import change_list_to_tf
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--gamma', type=float, default=0.99)
@@ -55,10 +53,6 @@ class Actor:
     def log_pdf(self, mu, std, action):
         std = tf.clip_by_value(std, self.std_bound[0], self.std_bound[1])
         var = std ** 2
-
-        # We have to make  it the same shape as mu
-        action = change_list_to_tf(action, mu.shape[0], mu.shape[1])
-
         log_policy_pdf = -0.5 * (action - mu) ** 2 / \
             var - 0.5 * tf.math.log(var * 2 * np.pi)
         return tf.reduce_sum(log_policy_pdf, 1, keepdims=True)
@@ -182,7 +176,7 @@ class Agent:
                 next_state, reward, done, _ = self.env.step(action)
 
                 state = np.reshape(state, [1, self.state_dim])
-                action = np.reshape(action, [3, 1])
+                action = np.reshape(action, [1, self.action_dim])
                 next_state = np.reshape(next_state, [1, self.state_dim])
                 reward = np.reshape(reward, [1, 1])
                 log_old_policy = np.reshape(log_old_policy, [1, 1])
