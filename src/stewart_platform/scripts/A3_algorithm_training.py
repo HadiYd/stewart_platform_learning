@@ -28,7 +28,7 @@ parser.add_argument('--run', type=int, default=1)
 args = parser.parse_args()
 
 tf.keras.backend.set_floatx('float64')
-wandb.init(name=f'A3C_algorithm_{args.run}', project="Distance_plot_1000")
+wandb.init(name=f'A3C_algorithm_{args.run}', project="Distance_plot_1000_new_plots")
 
 CUR_EPISODE = 0
 

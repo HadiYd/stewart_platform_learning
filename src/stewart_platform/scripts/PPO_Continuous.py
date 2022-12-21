@@ -28,7 +28,7 @@ parser.add_argument('--run', type=int, default=5)
 args = parser.parse_args()
 
 tf.keras.backend.set_floatx('float64')
-wandb.init(name=f'PPO_run_{args.run}', project="Distance_plot")
+wandb.init(name=f'PPO_run_{args.run}', project="Distance_plot_new_plots")
 
 
 class Actor:
@@ -170,7 +170,11 @@ class Agent:
                 wandb.log({'Action_P': list(action)[0] })
                 wandb.log({'Action_I': list(action)[1] })
                 wandb.log({'Action_D': list(action)[2] })
+                wandb.log({'surge_x': list(state)[0] })
+                wandb.log({'sway_y': list(state)[1] })
                 wandb.log({'heave_z': list(state)[2] })
+                wandb.log({'roll': list(state)[3] })
+                wandb.log({'pitch': list(state)[4] })
                 wandb.log({'yaw': list(state)[5] })
 
                 next_state, reward, done, _ = self.env.step(action)
