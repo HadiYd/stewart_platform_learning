@@ -65,6 +65,7 @@ class Actor:
             Dense(400, activation='relu'),    
             Dense(300, activation='relu'),
             Dense(self.action_dim, activation='sigmoid'),   # changed to sigmoid instead of tanh
+            Lambda(lambda x: x * (self.action_bound_high-self.action_bound_low) + self.action_bound_low)  # Denormalize output layer to adapt PID values
         ])
 
     def train(self, states, q_grads):
