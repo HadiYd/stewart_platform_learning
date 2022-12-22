@@ -20,8 +20,8 @@ stewart:
   max_roll_angle: 80   # platform limits are [-23, 23] deg tested on z = 1.2
   max_yaw_angle: 80    # platform limits are [-45, 45] deg tested on z = 1.2
 
-  p_range_value: [30,100]
-  i_range_value: [10,60]
+  p_range_value: [30,100] # min 30
+  i_range_value: [10,60] # max 10
   d_range_value: [0,1]
 
   reach_goal_reward : 0

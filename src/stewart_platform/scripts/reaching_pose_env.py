@@ -198,7 +198,7 @@ class PoseSetEnv(stewart_env.StewartEnv):
         done_xyz_dis   = self.dist_to_goal <= self.min_dis_from_goal  # 0.05
 
         # if all three oriantation values are reached
-        done_roll  = abs(self.roll_diff )  <  self.min_roll_angle_diff  # 5 degree
+        done_roll  = abs(self.roll_diff )  <  self.min_roll_angle_diff  # 5 degree 
         done_pitch = abs(self.pitch_diff) <  self.min_pitch_angle_diff
         done_yaw   = abs(self.yaw_diff)   <  self.min_yaw_angle_diff
 
