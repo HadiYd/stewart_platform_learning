@@ -31,7 +31,7 @@ args = parser.parse_args()
 
 
 tf.keras.backend.set_floatx('float64')
-wandb.init(name=f'DDPG_run_{args.run}', project="Train_and_Run_trained")
+# wandb.init(name=f'DDPG_run_{args.run}', project="Train_and_Save")
 
 class ReplayBuffer:
     def __init__(self, capacity=20000):   
@@ -60,12 +60,12 @@ class Actor:
         self.opt = tf.keras.optimizers.Adam(args.actor_lr)
 
     def create_model(self):
-        return tf.keras.Sequential([
-            Input((self.state_dim,)),
+        return tf.keras.models.Sequential([
+            Input((6,)),
             Dense(400, activation='relu'),    
             Dense(300, activation='relu'),
-            Dense(self.action_dim, activation='sigmoid'),   # changed to sigmoid instead of tanh
-            Lambda(lambda x: x * (self.action_bound_high-self.action_bound_low) + self.action_bound_low)  # Denormalize output layer to adapt PID values
+            Dense(3, activation='sigmoid'),   # changed to sigmoid instead of tanh
+            Lambda(lambda x: x * (np.array([100,60,1], dtype=np.float32)-np.array([30,20,0], dtype=np.float32)) + np.array([30,20,0], dtype=np.float32)) 
         ])
 
     def train(self, states, q_grads):
@@ -202,11 +202,12 @@ class Agent:
 
     def train(self, max_episodes=1000):
         reward_history = []
+        best_score = self.env.reward_range[0]
         for ep in range(max_episodes):
             episode_reward, done = 0, False
 
             state = self.env.reset()
-            best_score = self.env.reward_range[0]
+            
             bg_noise = np.zeros(self.action_dim)
             
             while not done:
@@ -232,8 +233,10 @@ class Agent:
 
             # Save model 
             reward_history.append(episode_reward)
+            print("reward history is", reward_history)
             avg_score = np.mean(reward_history[-100:])
             if avg_score > best_score:
+                print("Avg Score is: ", avg_score, "Best Score is: ", best_score)
                 best_score = avg_score
                 self.save_models()
 
@@ -243,33 +246,33 @@ class Agent:
             state = self.env.reset()            
             while not done:
                 action = self.actor.get_action(state)
-                action = np.clip(action , self.action_bound_low , self.action_bound_high)
-                wandb.log({'Action_P_Trained': list(action)[0] })
-                wandb.log({'Action_I_Trained': list(action)[1] })
-                wandb.log({'Action_D_Trained': list(action)[2] })
-                wandb.log({'heave_z_Trained': list(state)[2] })
-                wandb.log({'yaw_Trained': list(state)[5] })
+                # action = np.clip(action , self.action_bound_low , self.action_bound_high)
+                # wandb.log({'Action_P_Trained': list(action)[0] })
+                # wandb.log({'Action_I_Trained': list(action)[1] })
+                # wandb.log({'Action_D_Trained': list(action)[2] })
+                # wandb.log({'heave_z_Trained': list(state)[2] })
+                # wandb.log({'yaw_Trained': list(state)[5] })
                 next_state, reward, done, _ = self.env.step(action)             
                 episode_reward += reward
                 state = next_state
             print('Trained EP{} EpisodeReward={}'.format(ep, episode_reward))
-            wandb.log({'Reward_trained': episode_reward})
+            # wandb.log({'Reward_trained': episode_reward})
 
     def save_models(self):
         print('... saving models ...')
-        self.actor.save(self.chkpt_dir+'actor')
-        self.target_actor.save(self.chkpt_dir+'target_actor')
-        self.critic.save(self.chkpt_dir+'critic')
-        self.target_critic.save(self.chkpt_dir+'target_critic')
+        self.actor.save(self.chkpt_dir+'actor',compile=False)
+        self.target_actor.save(self.chkpt_dir+'target_actor',compile=False)
+        self.critic.save(self.chkpt_dir+'critic',compile=False)
+        self.target_critic.save(self.chkpt_dir+'target_critic',compile=False)
+
+
 
     def load_models(self):
         print('... loading models ...')
         self.actor = keras.models.load_model(self.chkpt_dir+'actor')
-        self.target_actor = \
-            keras.models.load_model(self.chkpt_dir+'target_actor')
+        self.target_actor = keras.models.load_model(self.chkpt_dir+'target_actor')
         self.critic = keras.models.load_model(self.chkpt_dir+'critic')
-        self.target_critic = \
-            keras.models.load_model(self.chkpt_dir+'target_critic')
+        self.target_critic = keras.models.load_model(self.chkpt_dir+'target_critic')
 
 
 def main():
@@ -279,7 +282,7 @@ def main():
     agent = Agent(env)
 
     # Train or play the trained one!
-    load_checkpoint = False 
+    load_checkpoint = True 
     if load_checkpoint:
         agent.load_models()
         agent.play_trained(max_episodes=10)

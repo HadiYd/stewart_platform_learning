@@ -4,6 +4,7 @@ main repo: https://github.com/marload/DeepRL-TensorFlow2
 """
 import wandb
 import tensorflow as tf
+import tensorflow.keras as keras
 from tensorflow.keras.layers import Input, Dense, Lambda
 
 import gym
@@ -28,7 +29,7 @@ parser.add_argument('--run', type=int, default=5)
 args = parser.parse_args()
 
 tf.keras.backend.set_floatx('float64')
-wandb.init(name=f'PPO_run_{args.run}', project="Distance_plot_new_plots")
+# wandb.init(name=f'PPO_run_{args.run}', project="Distance_plot_new_plots")
 
 
 class Actor:
@@ -83,6 +84,8 @@ class Actor:
         grads = tape.gradient(loss, self.model.trainable_variables)
         self.opt.apply_gradients(zip(grads, self.model.trainable_variables))
         return loss
+    def save(self,path):
+        self.model.save(path, include_optimizer = False, save_format = 'h5')
 
 
 class Critic:
@@ -112,16 +115,19 @@ class Critic:
         grads = tape.gradient(loss, self.model.trainable_variables)
         self.opt.apply_gradients(zip(grads, self.model.trainable_variables))
         return loss
+    def save(self,path):
+        self.model.save(path, include_optimizer = False, save_format = 'h5')
 
 
 class Agent:
-    def __init__(self, env):
+    def __init__(self, env,chkpt_dir='models/ppo/'):
         self.env = env
         self.state_dim = self.env.observation_space.shape[0]
         self.action_dim = self.env.action_space.shape[0]
         self.action_bound_high = self.env.action_space.high #self.env.action_space.high[0] this was useful to scale each!
         self.action_bound_low  = self.env.action_space.low  # in order to specify PID low limits
         self.std_bound = [1e-2, 1.0]
+        self.chkpt_dir = chkpt_dir
 
         self.actor_opt = tf.keras.optimizers.Adam(args.actor_lr)
         self.critic_opt = tf.keras.optimizers.Adam(args.critic_lr)
@@ -158,24 +164,26 @@ class Agent:
             action_batch = []
             reward_batch = []
             old_policy_batch = []
+            reward_history = []
 
             episode_reward, done = 0, False
 
             state = self.env.reset()
+            best_score = self.env.reward_range[0]
 
             while not done:
                 # self.env.render()
                 log_old_policy, action = self.actor.get_action(state)
 
-                wandb.log({'Action_P': list(action)[0] })
-                wandb.log({'Action_I': list(action)[1] })
-                wandb.log({'Action_D': list(action)[2] })
-                wandb.log({'surge_x': list(state)[0] })
-                wandb.log({'sway_y': list(state)[1] })
-                wandb.log({'heave_z': list(state)[2] })
-                wandb.log({'roll': list(state)[3] })
-                wandb.log({'pitch': list(state)[4] })
-                wandb.log({'yaw': list(state)[5] })
+                # wandb.log({'Action_P': list(action)[0] })
+                # wandb.log({'Action_I': list(action)[1] })
+                # wandb.log({'Action_D': list(action)[2] })
+                # wandb.log({'surge_x': list(state)[0] })
+                # wandb.log({'sway_y': list(state)[1] })
+                # wandb.log({'heave_z': list(state)[2] })
+                # wandb.log({'roll': list(state)[3] })
+                # wandb.log({'pitch': list(state)[4] })
+                # wandb.log({'yaw': list(state)[5] })
 
                 next_state, reward, done, _ = self.env.step(action)
 
@@ -216,7 +224,39 @@ class Agent:
                 state = next_state[0]
 
             print('EP{} EpisodeReward={}'.format(ep, episode_reward))
-            wandb.log({'Reward': episode_reward})
+            # wandb.log({'Reward': episode_reward})
+             # Save model 
+            reward_history.append(episode_reward)
+            avg_score = np.mean(reward_history[-100:])
+            if avg_score > best_score:
+                best_score = avg_score
+                self.save_models()
+
+
+    def play_trained(self, max_episodes=10):
+        for ep in range(max_episodes):
+            episode_reward, done = 0, False
+            state = self.env.reset()            
+            while not done:
+                log_old_policy, action = self.actor.get_action(state)
+                next_state, reward, done, _ = self.env.step(action)
+                episode_reward += reward
+                state = next_state
+            print('Trained EP{} EpisodeReward={}'.format(ep, episode_reward))
+
+            
+    def save_models(self):
+        print('... saving models ...')
+        self.actor.save(self.chkpt_dir+'actor')
+        self.critic.save(self.chkpt_dir+'critic')
+
+
+
+    def load_models(self):
+        print('... loading models ...')
+        self.actor = keras.models.load_model(self.chkpt_dir+'actor')
+        self.critic = keras.models.load_model(self.chkpt_dir+'critic')
+
 
 
 def main():
@@ -224,7 +264,15 @@ def main():
     env_name = 'StewartPose-v0'
     env = gym.make(env_name)
     agent = Agent(env)
-    agent.train(max_episodes=500)
+
+    # Train or play the trained one!
+    load_checkpoint = False 
+    if load_checkpoint:
+        agent.load_models()
+        agent.play_trained(max_episodes=10)
+    else:
+        print("training")
+        agent.train(max_episodes=20)
 
 
 if __name__ == "__main__":
