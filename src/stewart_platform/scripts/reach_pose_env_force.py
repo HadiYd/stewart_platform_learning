@@ -6,7 +6,7 @@ from gym import spaces
 from gym.envs.registration import register
 import numpy as np
 
-import stewart_env
+import stewart_env_force
 import math
 
 max_episode_steps = 200 # Can be any Value 
