@@ -51,6 +51,7 @@ class PoseSetEnv(stewart_env_force.StewartEnv):
         get configuration parameters
 
         """
+        self.sim_time = rospy.get_time()
 
         # reaching task parameters ( we want the end effector to reach the below pose as a task )
         self.reach_x = rospy.get_param("/reaching_task/reach_x")
@@ -179,7 +180,7 @@ class PoseSetEnv(stewart_env_force.StewartEnv):
         Then maintains the current time as "previous time" to calculate the elapsed time again
         """
         current_time = rospy.get_time()
-        dt = self.sim_time - current_time
+        dt = current_time - self.sim_time 
         self.sim_time = current_time
         return dt
 
