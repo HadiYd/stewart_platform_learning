@@ -24,6 +24,13 @@ stewart:
   i_range_value: [10,60] # [10,60]
   d_range_value: [0,1]
 
+  f1_range_value: [-100,100]
+  f2_range_value: [-100,100]
+  f3_range_value: [-100,100]
+  f4_range_value: [-100,100]
+  f5_range_value: [-100,100]
+  f6_range_value: [-100,100]
+
   reach_goal_reward : 0
   go_very_far_reward: -1
   immobility_anxiety  : -0.001
