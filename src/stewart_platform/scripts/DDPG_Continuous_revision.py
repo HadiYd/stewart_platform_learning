@@ -15,6 +15,8 @@ from collections import deque
 
 import reaching_pose_env
 import rospy
+import time 
+import pandas as pd
 
 
 parser = argparse.ArgumentParser()
@@ -25,13 +27,14 @@ parser.add_argument('--batch_size', type=int, default=64)
 parser.add_argument('--tau', type=float, default=0.001)
 parser.add_argument('--train_start', type=int, default=2000)
 parser.add_argument('--run', type=int, default=1)
+parser.add_argument('--load_checkpoint', type=bool, default=True)
 
 
 args = parser.parse_args()
 
 
 tf.keras.backend.set_floatx('float64')
-# wandb.init(name=f'DDPG_run_{args.run}', project="Train_and_Save")
+
 
 class ReplayBuffer:
     def __init__(self, capacity=20000):   
@@ -61,11 +64,11 @@ class Actor:
 
     def create_model(self):
         return tf.keras.models.Sequential([
-            Input((6,)),
+            Input((self.state_dim,)),
             Dense(400, activation='relu'),    
             Dense(300, activation='relu'),
-            Dense(3, activation='sigmoid'),   # changed to sigmoid instead of tanh
-            Lambda(lambda x: x * (np.array([100,60,1], dtype=np.float32)-np.array([30,20,0], dtype=np.float32)) + np.array([30,20,0], dtype=np.float32)) 
+            Dense(self.action_dim, activation='sigmoid'),   # changed to sigmoid instead of tanh
+            Lambda(lambda x: x * (self.action_bound_high-self.action_bound_low) + self.action_bound_low) # Denormalize output layer to adapt PID values
         ])
 
     def train(self, states, q_grads):
@@ -80,7 +83,12 @@ class Actor:
         state = np.reshape(state, [1, self.state_dim])
         return self.model.predict(state)[0]
     def save(self,path):
+        test_model = self.model
         self.model.save(path)
+    def save_weights(self,path):
+        self.model.save_weights(path)
+    def load_weights(self,path):
+        self.model.load_weights(path)
 
 
 
@@ -127,16 +135,21 @@ class Critic:
         return loss
     def save(self,path):
         self.model.save(path)
+    def save_weights(self,path):
+        self.model.save_weights(path)
+    def load_weights(self,path):
+        self.model.load_weights(path)
 
 
 class Agent:
-    def __init__(self, env,chkpt_dir='models/ddpg/'):
+    def __init__(self, env,chkpt_dir='models/ddpg/',chkpt_dir_w = 'models_weights/ddpg2/'):
         self.env = env
         self.state_dim = self.env.observation_space.shape[0]
         self.action_dim = self.env.action_space.shape[0]
         self.action_bound_high = self.env.action_space.high #self.env.action_space.high[0] this was useful to scale each!
         self.action_bound_low  = self.env.action_space.low  # in order to specify PID low limits
         self.chkpt_dir = chkpt_dir
+        self.chkpt_dir_w = chkpt_dir_w
 
         self.buffer = ReplayBuffer()
 
@@ -205,16 +218,13 @@ class Agent:
         best_score = self.env.reward_range[0]
         for ep in range(max_episodes):
             episode_reward, done = 0, False
-
             state = self.env.reset()
-            
             bg_noise = np.zeros(self.action_dim)
-            
+              
             while not done:
                 action = self.actor.get_action(state)
                 noise = self.ou_noise(bg_noise, dim=self.action_dim)
                 action = np.clip(action + noise, self.action_bound_low , self.action_bound_high)
-
                 wandb.log({'Action_P': list(action)[0] })
                 wandb.log({'Action_I': list(action)[1] })
                 wandb.log({'Action_D': list(action)[2] })
@@ -227,44 +237,139 @@ class Agent:
                 episode_reward += reward
                 state = next_state
             if self.buffer.size() >= args.batch_size and self.buffer.size() >= args.train_start:
-                self.replay()                
+                self.replay() 
+                               
             print('EP{} EpisodeReward={}'.format(ep, episode_reward))
             wandb.log({'Reward': episode_reward})
 
             # Save model 
             reward_history.append(episode_reward)
-            print("reward history is", reward_history)
             avg_score = np.mean(reward_history[-100:])
             if avg_score > best_score:
-                print("Avg Score is: ", avg_score, "Best Score is: ", best_score)
                 best_score = avg_score
-                self.save_models()
+                self.save_models_weights()
 
-    def play_trained(self, max_episodes=10):
+
+    def over_shoot(self, yout):
+        return (yout.max()/yout[-1]-1)*100
+
+    def rise_time(self,t,yout):
+        return t[next(i for i in range(0,len(yout)-1) if yout[i]>yout[-1]*.90)]-t[0]
+
+    def settling_time(self,t,yout):
+        return t[next(len(yout)-i for i in range(2,len(yout)-1) if abs(yout[-i]/yout[-1]-1)>0.02 )]-t[0]
+
+    def play_constant(self, max_episodes=10, P_gain = 80,I_gain = 46, D_gain =0.46 ):
+        wandb.define_metric("Simulation Time (second)")
+        sim_step = 0.05
+        log_dict = {}
+        step_loop = 1
+        heave_spec = {}
+        yaw_spec = {}
+        start_time = time.time()
+        
         for ep in range(max_episodes):
             episode_reward, done = 0, False
             state = self.env.reset()            
-            while not done:
-                action = self.actor.get_action(state)
+            t_end = time.time() + 20          
+            while not done or (time.time() < t_end):
+                action_DONT_USE = self.actor.get_action(state)
+                action = np.array([P_gain,I_gain ,D_gain])
+                log_dict = {
+                            'K_p': list(action)[0], 'K_i': list(action)[1]  , 'K_d': list(action)[2],
+                            'Surge(x)': list(state)[0] ,'Sway(y)': list(state)[1],'Heave(z)': list(state)[2],
+                            'Roll': list(state)[3], 'Pitch': list(state)[4] ,'Yaw': list(state)[5],
+                            "Simulation Time (Seconds)": step_loop*sim_step,
+                            }    
+                wandb.log(log_dict)
+
+
                 # action = np.clip(action , self.action_bound_low , self.action_bound_high)
-                # wandb.log({'Action_P_Trained': list(action)[0] })
-                # wandb.log({'Action_I_Trained': list(action)[1] })
-                # wandb.log({'Action_D_Trained': list(action)[2] })
-                # wandb.log({'heave_z_Trained': list(state)[2] })
-                # wandb.log({'yaw_Trained': list(state)[5] })
-                next_state, reward, done, _ = self.env.step(action)             
+                next_state, reward, done, _ = self.env.step(action)  
                 episode_reward += reward
                 state = next_state
+
+                heave_spec[step_loop*sim_step] = list(state)[2]
+                yaw_spec[step_loop*sim_step]   = list(state)[5]
+                step_loop +=1
             print('Trained EP{} EpisodeReward={}'.format(ep, episode_reward))
-            # wandb.log({'Reward_trained': episode_reward})
+            wandb.log({'Reward': episode_reward})
+
+            # initialize list of lists
+            time_spec = [['Heave','Over_Shoot', self.over_shoot(np.array(list(heave_spec.values())))],
+                    ['Heave','Rise_Time',  self.rise_time(np.array(list(heave_spec.keys())), np.array(list(heave_spec.values())))],
+                    ['Heave','Settling_Time', self.settling_time(np.array(list(heave_spec.keys())), np.array(list(heave_spec.values())))],
+                    ['Yaw','Over_Shoot', self.over_shoot(np.array(list(yaw_spec.values())))],
+                    ['Yaw','Rise_Time',  self.rise_time(np.array(list(yaw_spec.keys())), np.array(list(yaw_spec.values())))],
+                    ['Yaw','Settling_Time', self.settling_time(np.array(list(yaw_spec.keys())), np.array(list(yaw_spec.values())))]]
+            
+            # Save the required time domain specifications in a pandas Data frame
+            spec_df = pd.DataFrame(time_spec, columns=['State', 'Specification', 'Value'])
+            wandb.log({f"Specification_DDPG_run_{args.run}": spec_df})
+        print("Total Time to exacute: ", time.time() - start_time)
+
+    def play_trained(self, max_episodes=10):
+        wandb.define_metric("Simulation Time (second)")
+        sim_step = 0.05
+        log_dict = {}
+        step_loop = 1
+        heave_spec = {}
+        yaw_spec = {}
+        start_time = time.time()
+    
+        for ep in range(max_episodes):
+            episode_reward, done = 0, False
+            state = self.env.reset()            
+            t_end = time.time() + 20          
+            while not done or (time.time() < t_end):
+                action = self.actor.get_action(state)
+                log_dict = {
+                            'K_p': list(action)[0], 'K_i': list(action)[1]  , 'K_d': list(action)[2],
+                            'Surge(x)': list(state)[0] ,'Sway(y)': list(state)[1],'Heave(z)': list(state)[2],
+                            'Roll': list(state)[3], 'Pitch': list(state)[4] ,'Yaw': list(state)[5],
+                            "Simulation Time (Seconds)": step_loop*sim_step,
+                            }    
+                wandb.log(log_dict)
+
+
+                # action = np.clip(action , self.action_bound_low , self.action_bound_high)
+                next_state, reward, done, _ = self.env.step(action)  
+                episode_reward += reward
+                state = next_state
+
+                heave_spec[step_loop*sim_step] = list(state)[2]
+                yaw_spec[step_loop*sim_step]   = list(state)[5]
+                step_loop +=1
+            print('Trained EP{} EpisodeReward={}'.format(ep, episode_reward))
+            wandb.log({'Reward': episode_reward})
+
+            # initialize list of lists
+            time_spec = [['Heave','Over_Shoot', self.over_shoot(np.array(list(heave_spec.values())))],
+                    ['Heave','Rise_Time',  self.rise_time(np.array(list(heave_spec.keys())), np.array(list(heave_spec.values())))],
+                    ['Heave','Settling_Time', self.settling_time(np.array(list(heave_spec.keys())), np.array(list(heave_spec.values())))],
+                    ['Yaw','Over_Shoot', self.over_shoot(np.array(list(yaw_spec.values())))],
+                    ['Yaw','Rise_Time',  self.rise_time(np.array(list(yaw_spec.keys())), np.array(list(yaw_spec.values())))],
+                    ['Yaw','Settling_Time', self.settling_time(np.array(list(yaw_spec.keys())), np.array(list(yaw_spec.values())))]]
+            
+            # Save the required time domain specifications in a pandas Data frame
+            spec_df = pd.DataFrame(time_spec, columns=['State', 'Specification', 'Value'])
+            wandb.log({f"Specification_DDPG_run_{args.run}": spec_df})
+        print("Total Time to exacute: ", time.time() - start_time)
 
     def save_models(self):
         print('... saving models ...')
-        self.actor.save(self.chkpt_dir+'actor',compile=False)
-        self.target_actor.save(self.chkpt_dir+'target_actor',compile=False)
-        self.critic.save(self.chkpt_dir+'critic',compile=False)
-        self.target_critic.save(self.chkpt_dir+'target_critic',compile=False)
+        self.actor.save(self.chkpt_dir+'actor')
+        self.target_actor.save(self.chkpt_dir+'target_actor')
+        self.critic.save(self.chkpt_dir+'critic')
+        self.target_critic.save(self.chkpt_dir+'target_critic')
 
+    def save_models_weights(self):
+        print('... saving models weights ...')
+        self.actor.save_weights(self.chkpt_dir_w+'actor_weights.h5')
+        self.target_actor.save_weights(self.chkpt_dir_w+'target_actor_weights.h5')
+        self.critic.save_weights(self.chkpt_dir_w+'critic_weights.h5')
+        self.target_critic.save_weights(self.chkpt_dir_w+'target_critic_weights.h5')
+        
 
 
     def load_models(self):
@@ -274,6 +379,13 @@ class Agent:
         self.critic = keras.models.load_model(self.chkpt_dir+'critic')
         self.target_critic = keras.models.load_model(self.chkpt_dir+'target_critic')
 
+    def load_models_weights(self):
+        print('... loading models weights ...')
+        self.actor.load_weights(self.chkpt_dir_w+'actor_weights.h5')
+        self.target_actor.load_weights(self.chkpt_dir_w+'target_actor_weights.h5')
+        self.critic.load_weights(self.chkpt_dir_w+'critic_weights.h5')
+        self.target_critic.load_weights(self.chkpt_dir_w+'target_critic_weights.h5')
+
 
 def main():
     rospy.init_node('stewart_gym_DDPG')
@@ -281,13 +393,24 @@ def main():
     env = gym.make(env_name)
     agent = Agent(env)
 
+    
     # Train or play the trained one!
-    load_checkpoint = True 
-    if load_checkpoint:
-        agent.load_models()
-        agent.play_trained(max_episodes=10)
+    project_name = "Final_with_Time_Domain_Spec_damping_3"
+
+    play_constant_pid =False
+    if play_constant_pid:
+        wandb.init(name=f'Empirical_2',project=f"Run_Trained_{project_name}")
+        print("Play constant PID values.")
+        agent.play_constant(max_episodes=1,P_gain=100, I_gain=60, D_gain=1)
+
+    elif args.load_checkpoint:
+        wandb.init(name=f'DDPG_run_{args.run}',project=f"Run_Trained_{project_name}")
+        agent.load_models_weights()
+        agent.play_trained(max_episodes=1)
+
     else:
         print("training")
+        wandb.init(name=f'DDPG_run_{args.run}',project=f"Train_and_Save_{project_name}")
         agent.train(max_episodes=500)
     
 

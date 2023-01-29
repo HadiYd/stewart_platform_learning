@@ -1,6 +1,6 @@
 #!/bin/bash
-for i in $(seq 0 5)
+for i in $(seq 0 10)
 do
-   rosrun stewart_platform PPO_Continuous.py --run $i
+   rosrun stewart_platform DDPG_Continuous_revision.py --run $i
 done
 

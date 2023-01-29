@@ -2,6 +2,7 @@
 
 import rospy
 from gym import spaces
+import time
 
 from gym.envs.registration import register
 import numpy as np
@@ -9,7 +10,7 @@ import numpy as np
 import stewart_env
 import math
 
-max_episode_steps = 200 # Can be any Value 
+max_episode_steps = 200 # 200 Can be any Value 
 
 register(
         id='StewartPose-v0',
@@ -51,6 +52,7 @@ class PoseSetEnv(stewart_env.StewartEnv):
         get configuration parameters
 
         """
+        self.sim_time = rospy.get_time()
 
         # reaching task parameters ( we want the end effector to reach the below pose as a task )
         self.reach_x = rospy.get_param("/reaching_task/reach_x")
@@ -181,7 +183,7 @@ class PoseSetEnv(stewart_env.StewartEnv):
         Then maintains the current time as "previous time" to calculate the elapsed time again
         """
         current_time = rospy.get_time()
-        dt = self.sim_time - current_time
+        dt = current_time - self.sim_time 
         self.sim_time = current_time
         return dt
 
@@ -207,12 +209,22 @@ class PoseSetEnv(stewart_env.StewartEnv):
 
         
         # if all goals are satisfied
-        self.done_sucess = (done_xyz_dis and done_roll and done_pitch and done_yaw and done_speed)
+        self.done_sucess = (done_xyz_dis and done_roll and done_pitch and done_yaw and done_speed )
+
+
+
+        # use it for only trained version!
+        # if self.done_sucess:
+        #     print("Done Success!! wait 10 second")
+        #     time.sleep(3) 
 
         print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>      done_fail="+str(self.done_fail)+", done_sucess="+str(self.done_sucess))
 
         # done anyway : 
         done = self.done_fail or self.done_sucess
+        if done:
+            print("Simulation Time: ",self.get_elapsed_time())
+
 
         return done
 

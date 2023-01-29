@@ -54,7 +54,7 @@ First, Define all Joints:
 # define prismatic joints , total number 6 legs
 p_p_joint_vel_limit = str(1)
 p_p_joint_eff_limit = str(500)
-p_p_joint_day_damping = str(3)
+p_p_joint_day_damping = str(3) # 3
 p_p_joint_axis_lower_limit = "0.1"
 p_p_joint_axis_upper_limit = str(0.8*piston_length)
 
