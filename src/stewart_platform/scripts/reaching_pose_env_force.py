@@ -18,7 +18,7 @@ register(
     )
 
 
-class PoseSetEnv(stewart_env.StewartEnv):
+class PoseSetEnv(stewart_env_force.StewartEnv):
     def __init__(self):
 
         print ("Entered stewart pose Env")
