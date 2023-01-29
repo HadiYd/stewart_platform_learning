@@ -26,7 +26,7 @@ parser.add_argument('--batch_size', type=int, default=64)
 parser.add_argument('--tau', type=float, default=0.001)
 parser.add_argument('--train_start', type=int, default=2000)
 parser.add_argument('--run', type=int, default=1)
-parser.add_argument('--load_checkpoint', type=bool, default=True)
+parser.add_argument('--load_checkpoint', type=bool, default=False)
 
 
 args = parser.parse_args()
