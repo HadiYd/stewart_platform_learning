@@ -143,14 +143,14 @@ class Critic:
         self.model.load_weights(path)
 
 class Agent:
-    def __init__(self, env):
+    def __init__(self, env,chkpt_dir='models/ddpg/',chkpt_dir_w = 'models_weights/ddpg2/'):
         self.env = env
         self.state_dim = self.env.observation_space.shape[0]
         self.action_dim = self.env.action_space.shape[0]
-        print("action dim is : ", self.action_dim )
-        self.action_bound_high = self.env.action_space.high #self.env.action_space.high[0] this was useful to scale each!
+        self.action_bound_high = self.env.action_space.high # self.env.action_space.high[0] this was useful to scale each!
         self.action_bound_low  = self.env.action_space.low  # in order to specify force low limits
-
+        self.chkpt_dir = chkpt_dir
+        self.chkpt_dir_w = chkpt_dir_w
         self.buffer = ReplayBuffer()
 
         self.actor =  Actor( self.state_dim, self.action_dim, self.action_bound_high,self.action_bound_low )
