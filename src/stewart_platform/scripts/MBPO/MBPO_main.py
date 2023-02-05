@@ -3,6 +3,7 @@ import time
 import gym
 import numpy as np
 from itertools import count
+import wandb
 
 import logging
 
@@ -15,6 +16,11 @@ from .tf_models.replay_memory import ReplayMemory
 from .predict_env import PredictEnv
 from .sample_env import EnvSampler
 from .tf_models.constructor import construct_model, format_samples_for_training
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--run', type=int, default=5)
+args = parser.parse_args()
 
 
 
@@ -101,6 +107,10 @@ def train_policy_repeats(args, total_step, train_step, cur_step, env_pool, model
 
 
 def train(args, env_sampler, predict_env, agent, env_pool, model_pool):
+    # Train or play the trained one!
+    project_name = "MBPO_force"
+    print("training")
+    wandb.init(name=f'MBPO_run_{args.run}',project=f"Train_and_Save_{project_name}")
     total_step = 0
     reward_sum = 0
     rollout_length = 1
@@ -127,6 +137,14 @@ def train(args, env_sampler, predict_env, agent, env_pool, model_pool):
 
             cur_state, action, next_state, reward, done, info = env_sampler.sample(agent)
             env_pool.push(cur_state, action, reward, next_state, done)
+            wandb.log({'Action_f1': list(action)[0] })
+            wandb.log({'Action_f2': list(action)[1] })
+            wandb.log({'Action_f3': list(action)[2] })
+            wandb.log({'Action_f4': list(action)[3] })
+            wandb.log({'Action_f5': list(action)[4] })
+            wandb.log({'Action_f6': list(action)[5] })
+            wandb.log({'heave_z': list(cur_state)[2] })
+            wandb.log({'yaw': list(cur_state)[5] })
 
             if len(env_pool) > args.min_pool_size:
                 train_policy_steps += train_policy_repeats(args, total_step, train_policy_steps, cur_step, env_pool, model_pool, agent)

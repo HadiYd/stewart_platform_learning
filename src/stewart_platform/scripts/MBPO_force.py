@@ -2,7 +2,7 @@
 """
 main repo: https://github.com/marload/DeepRL-TensorFlow2
 """
-import wandb
+
 import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.keras.layers import Input, Dense, Lambda, concatenate
@@ -111,6 +111,7 @@ def readParser():
 
     parser.add_argument('--cuda', default=True, action="store_true",
                         help='run on CUDA (default: True)')
+    parser.add_argument('--run', type=int, default=5)
     return parser.parse_args()
 
 
@@ -152,12 +153,6 @@ def main(args=None):
 
     # Sampler of environment
     env_sampler = EnvSampler(env, max_path_length=args.max_path_length)
-
-    # Train or play the trained one!
-    project_name = "MBPO_force"
-
-    print("training")
-    wandb.init(name=f'MBPO_run_{args.run}',project=f"Train_and_Save_{project_name}")
     train(args, env_sampler, predict_env, agent, env_pool, model_pool)
 
 
