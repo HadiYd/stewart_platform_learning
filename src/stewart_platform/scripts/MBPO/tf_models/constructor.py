@@ -1,8 +1,8 @@
 import numpy as np
-import tensorflow.compat.v1 as tf
+import tensorflow._api.v2.compat.v1 as tf
 tf.disable_eager_execution()
-from tf_models.fc import FC
-from tf_models.bnn import BNN
+from fc import FC
+from bnn import BNN
 
 
 def construct_model(obs_dim=11, act_dim=3, rew_dim=1, hidden_dim=200, num_networks=7, num_elites=5, session=None):
