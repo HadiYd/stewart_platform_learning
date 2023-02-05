@@ -10,11 +10,11 @@ import os
 import os.path as osp
 import json
 
-from tf_models.replay_memory import ReplayMemory
+from .tf_models.replay_memory import ReplayMemory
 # from sac.sac import SAC
-from predict_env import PredictEnv
-from sample_env import EnvSampler
-from tf_models.constructor import construct_model, format_samples_for_training
+from .predict_env import PredictEnv
+from .sample_env import EnvSampler
+from .tf_models.constructor import construct_model, format_samples_for_training
 
 
 

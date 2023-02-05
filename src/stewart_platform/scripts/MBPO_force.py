@@ -24,24 +24,12 @@ from MBPO.predict_env import PredictEnv
 from MBPO.sample_env import EnvSampler
 from MBPO.tf_models.constructor import construct_model, format_samples_for_training
 from MBPO.MBPO_main import train
-from DDPG_Continuous_force import Agent
+from MBPO.tf_models.sac import SAC
 
 
 
 def readParser():
     parser = argparse.ArgumentParser(description='MBPO')
-
-
-    # For DDPG
-    parser.add_argument('--gamma', type=float, default=0.99)
-    parser.add_argument('--actor_lr', type=float, default=0.0001)
-    parser.add_argument('--critic_lr', type=float, default=0.001)
-    parser.add_argument('--batch_size', type=int, default=64)
-    parser.add_argument('--tau', type=float, default=0.001)
-    parser.add_argument('--train_start', type=int, default=2000)
-    parser.add_argument('--run', type=int, default=5)
-    parser.add_argument('--load_checkpoint', type=bool, default=True)
-
     ## For MBPO
 
     parser.add_argument('--env_name', default="Hopper-v2",
@@ -142,7 +130,7 @@ def main(args=None):
     env = gym.make(env_name)
 
     # Intial agent
-    agent = Agent(env)
+    agent = SAC(env.observation_space.shape[0], env.action_space, args)
 
     # Initial ensemble model
     state_size = np.prod(env.observation_space.shape)
@@ -169,7 +157,7 @@ def main(args=None):
     project_name = "MBPO_force"
 
     print("training")
-    # wandb.init(name=f'MBPO_run_{args.run}',project=f"Train_and_Save_{project_name}")
+    wandb.init(name=f'MBPO_run_{args.run}',project=f"Train_and_Save_{project_name}")
     train(args, env_sampler, predict_env, agent, env_pool, model_pool)
 
 
