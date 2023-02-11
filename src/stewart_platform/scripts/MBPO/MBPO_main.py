@@ -13,14 +13,14 @@ import json
 
 from .tf_models.replay_memory import ReplayMemory
 # from sac.sac import SAC
-from .predict_env import PredictEnv
-from .sample_env import EnvSampler
-from .tf_models.constructor import construct_model, format_samples_for_training
+# from .predict_env import PredictEnv
+# from .sample_env import EnvSampler
+# from .tf_models.constructor import construct_model, format_samples_for_training
 import argparse
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--run', type=int, default=5)
-args = parser.parse_args()
+# parser = argparse.ArgumentParser()
+# parser.add_argument('--run', type=int, default=5)
+# args = parser.parse_args()
 
 
 
@@ -119,6 +119,7 @@ def train(args, env_sampler, predict_env, agent, env_pool, model_pool):
     for epoch_step in range(args.num_epoch):
         start_step = total_step
         train_policy_steps = 0
+        episode_reward  = 0
         for i in count():
             cur_step = total_step - start_step
 
@@ -145,6 +146,7 @@ def train(args, env_sampler, predict_env, agent, env_pool, model_pool):
             wandb.log({'Action_f6': list(action)[5] })
             wandb.log({'heave_z': list(cur_state)[2] })
             wandb.log({'yaw': list(cur_state)[5] })
+            
 
             if len(env_pool) > args.min_pool_size:
                 train_policy_steps += train_policy_repeats(args, total_step, train_policy_steps, cur_step, env_pool, model_pool, agent)
@@ -159,16 +161,18 @@ def train(args, env_sampler, predict_env, agent, env_pool, model_pool):
                 print(total_step, env_sampler.path_rewards[-1], avg_reward)
                 '''
                 env_sampler.current_state = None
-                sum_reward = 0
+                episode_reward = 0
                 done = False
                 test_step = 0
 
                 while (not done) and (test_step != args.max_path_length):
                     cur_state, action, next_state, reward, done, info = env_sampler.sample(agent, eval_t=True)
-                    sum_reward += reward
+                    episode_reward += reward
                     test_step += 1
                 # logger.record_tabular("total_step", total_step)
                 # logger.record_tabular("sum_reward", sum_reward)
                 # logger.dump_tabular()
-                logging.info("Step Reward: " + str(total_step) + " " + str(sum_reward))
+                logging.info("Step Reward: " + str(total_step) + " " + str(episode_reward))
+                print('EP{} EpisodeReward={}'.format(total_step, episode_reward))
+                wandb.log({'Reward': episode_reward})
                 # print(total_step, sum_reward)

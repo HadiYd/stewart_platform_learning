@@ -1,28 +1,24 @@
 #!/usr/bin/env python
-"""
-main repo: https://github.com/marload/DeepRL-TensorFlow2
-"""
 
-import tensorflow as tf
-import tensorflow.keras as keras
-from tensorflow.keras.layers import Input, Dense, Lambda, concatenate
+# import tensorflow as tf
+# import tensorflow.keras as keras
+# from tensorflow.keras.layers import Input, Dense, Lambda, concatenate
 
 import gym
 import argparse
 import numpy as np
-import random
+# import random
 from collections import deque
-import time 
+# import time 
 
 import reaching_pose_env_force
 import rospy
-import pandas as pd
 
 from MBPO.tf_models.replay_memory import ReplayMemory
 # from sac.sac import SAC
 from MBPO.predict_env import PredictEnv
 from MBPO.sample_env import EnvSampler
-from MBPO.tf_models.constructor import construct_model, format_samples_for_training
+from MBPO.tf_models.constructor import construct_model  #, format_samples_for_training
 from MBPO.MBPO_main import train
 from MBPO.tf_models.sac import SAC
 
@@ -115,9 +111,7 @@ def readParser():
     return parser.parse_args()
 
 
-tf.keras.backend.set_floatx('float64')
-
-
+# tf.keras.backend.set_floatx('float64')
     
 
 def main(args=None):
@@ -132,6 +126,7 @@ def main(args=None):
 
     # Intial agent
     agent = SAC(env.observation_space.shape[0], env.action_space, args)
+
 
     # Initial ensemble model
     state_size = np.prod(env.observation_space.shape)
@@ -158,3 +153,4 @@ def main(args=None):
 
 if __name__ == "__main__":
     main()
+

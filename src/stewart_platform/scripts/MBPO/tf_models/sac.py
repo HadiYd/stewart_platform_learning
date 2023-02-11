@@ -21,7 +21,7 @@ class SAC(object):
 
         self.critic = QNetwork(num_inputs, action_space.shape[0], args.hidden_size).to(device=self.device)
         self.critic_optim = Adam(self.critic.parameters(), lr=args.lr)
-
+        
         self.critic_target = QNetwork(num_inputs, action_space.shape[0], args.hidden_size).to(self.device)
         hard_update(self.critic_target, self.critic)
 
