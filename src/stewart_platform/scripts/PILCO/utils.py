@@ -35,7 +35,7 @@ def policy(env, pilco, x, random):
     if random:
         return env.action_space.sample()
     else:
-        return pilco.compute_action(x[None, :])[0, :]
+        return pilco.compute_action(x).numpy().reshape(6,) #pilco.compute_action(x[None, :])[0, :]
 
 class Normalised_Env():
     def __init__(self, env_id, m, std):
