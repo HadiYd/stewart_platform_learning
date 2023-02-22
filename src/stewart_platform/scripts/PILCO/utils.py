@@ -5,7 +5,7 @@ float_type = config.default_float()
 import wandb
 
 
-def rollout(env, pilco, timesteps, verbose=True, random=False, SUBS=1, render=False):
+def rollout(env, pilco, timesteps, verbose=False, random=False, SUBS=1, render=False):
         X = []; Y = [];
         x = env.reset()
         ep_return_full = 0

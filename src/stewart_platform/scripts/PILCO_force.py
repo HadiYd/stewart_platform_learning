@@ -38,9 +38,9 @@ def main(args=None):
     env = gym.make(env_name)
 
     # Initial random rollouts to generate a dataset
-    X,Y, _, _ = rollout(env=env, pilco=None, verbose=False, random=True, timesteps=50, render=False)
-    for i in range(1,5):
-        X_, Y_, _, _ = rollout(env=env, pilco=None, verbose=False, random=True,  timesteps=50, render=False)
+    X,Y, _, _ = rollout(env=env, pilco=None,  random=True, timesteps=70)
+    for i in range(1,3):
+        X_, Y_, _, _ = rollout(env=env, pilco=None, random=True,  timesteps=70)
         X = np.vstack((X, X_))
         Y = np.vstack((Y, Y_))
 
@@ -56,11 +56,15 @@ def main(args=None):
     # R = ExponentialReward(state_dim=state_dim, t=np.array([0.1,0,0,0]))
     # pilco = PILCO(X, Y, controller=controller, horizon=40, reward=R)
 
-    for rollouts in range(100):
+
+   
+
+    for rollouts in range(10):
         pilco.optimize_models()
         pilco.optimize_policy()
         # import pdb; pdb.set_trace()
-        X_new, Y_new, _, _ = rollout(env=env, pilco=pilco, timesteps=50, render=False, random=False)
+        print(f"######## rollout num: {rollouts}  - Run with optimized model and policy")
+        X_new, Y_new, _, _ = rollout(env=env, pilco=pilco, random=False, timesteps=50 )
         # Update dataset
         X = np.vstack((X, X_new)); Y = np.vstack((Y, Y_new))
         pilco.mgpr.set_data((X, Y))
