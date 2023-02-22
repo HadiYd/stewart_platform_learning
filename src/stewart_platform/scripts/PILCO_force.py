@@ -13,6 +13,7 @@ from collections import deque
 
 import reaching_pose_env_force
 import rospy
+import wandb
 
 
 
@@ -49,12 +50,13 @@ def main(args=None):
     controller = RbfController(state_dim=state_dim, control_dim=control_dim, num_basis_functions=5)
     # controller = LinearController(state_dim=state_dim, control_dim=control_dim)
 
+    print("######################## RBF Controller SELECTED ###############")
     pilco = PILCO((X, Y), controller=controller, horizon=20)
     # Example of user provided reward function, setting a custom target state
     # R = ExponentialReward(state_dim=state_dim, t=np.array([0.1,0,0,0]))
     # pilco = PILCO(X, Y, controller=controller, horizon=40, reward=R)
 
-    for rollouts in range(3):
+    for rollouts in range(100):
         pilco.optimize_models()
         pilco.optimize_policy()
         # import pdb; pdb.set_trace()
@@ -65,6 +67,9 @@ def main(args=None):
 
 
 if __name__ == "__main__":
+    run = 5
+    project_name = "PILCO_training"
+    wandb.init(name=f'PILCO_run_{run}',project=f"Train_and_Save_{project_name}")
     main()
 
 
