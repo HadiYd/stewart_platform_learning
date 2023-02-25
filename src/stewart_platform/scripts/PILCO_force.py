@@ -56,13 +56,11 @@ def main(args=None):
     # R = ExponentialReward(state_dim=state_dim, t=np.array([0.1,0,0,0]))
     # pilco = PILCO(X, Y, controller=controller, horizon=40, reward=R)
 
-
-   
-
-    for rollouts in range(10):
+    for rollouts in range(30):
+        # import pdb; pdb.set_trace()
         pilco.optimize_models()
         pilco.optimize_policy()
-        # import pdb; pdb.set_trace()
+       
         print(f"######## rollout num: {rollouts}  - Run with optimized model and policy")
         X_new, Y_new, _, _ = rollout(env=env, pilco=pilco, random=False, timesteps=50 )
         # Update dataset
@@ -71,7 +69,7 @@ def main(args=None):
 
 
 if __name__ == "__main__":
-    run = 5
+    run = 30
     project_name = "PILCO_training"
     wandb.init(name=f'PILCO_run_{run}',project=f"Train_and_Save_{project_name}")
     main()

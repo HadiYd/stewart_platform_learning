@@ -69,6 +69,7 @@ class MGPR(gpflow.Module):
                     best_params["k_lengthscales"] = model.kernel.lengthscales
                     best_params["k_variance"] = model.kernel.variance
                     best_params["l_variance"] = model.likelihood.variance
+                    # import pdb; pdb.set_trace()
                     best_loss = model.training_loss()
             model.kernel.lengthscales.assign(best_params["lengthscales"])
             model.kernel.variance.assign(best_params["k_variance"])
