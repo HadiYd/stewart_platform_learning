@@ -343,10 +343,9 @@ def main():
     env_name = 'StewartPose-v0'
     env = gym.make(env_name)
     agent = Agent(env)
-
     
     # Train or play the trained one!
-    project_name = "Feedforward_Control_Force_0_10"
+    project_name = "Feedforward_Control"
 
     # play_constant_pid =False
     # if play_constant_pid:
@@ -355,14 +354,14 @@ def main():
     #     agent.play_constant(max_episodes=1,P_gain=100, I_gain=60, D_gain=1)
 
     if args.load_checkpoint:
-        wandb.init(name=f'DDPG_run_{args.run}',project=f"Run_Trained_{project_name}")
+        wandb.init(name=f'DDPG_run_{args.run}',project=f"{project_name}_Run_Trained")
         agent.load_models_weights()
         agent.play_trained(max_episodes=1)
 
     else:
         print("training")
-        wandb.init(name=f'DDPG_run_{args.run}',project=f"Train_and_Save_{project_name}")
-        agent.train(max_episodes=1000)
+        wandb.init(name=f'DDPG_run_{args.run}',project=f"{project_name}_Train_and_Save")
+        agent.train(max_episodes=200)
     
 
 if __name__ == "__main__":

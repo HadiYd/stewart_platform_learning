@@ -320,15 +320,15 @@ def main():
 
 
     # Train or play the trained one!
-    project_name = "Feedforward_Control_Force_0_10"
+    project_name = "Feedforward_Control"
     if args.load_checkpoint:
-        wandb.init(name=f'PPO_run_{args.run}', project=f"Run_Trained_{project_name}")
+        wandb.init(name=f'PPO_run_{args.run}', project=f"{project_name}_Run_Trained")
         agent.load_models_weights()
         agent.play_trained(max_episodes=1)
     else:
         print("training")
-        wandb.init(name=f'PPO_run_{args.run}', project=f"Train_and_Save_{project_name}")
-        agent.train(max_episodes=1000)
+        wandb.init(name=f'PPO_run_{args.run}', project=f"{project_name}_Train_and_Save")
+        agent.train(max_episodes=200)
 
 
 if __name__ == "__main__":
