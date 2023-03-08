@@ -8,6 +8,7 @@ from .mgpr import MGPR
 from .smgpr import SMGPR
 from .. import controllers
 from .. import rewards
+import os
 
 float_type = gpflow.config.default_float()
 from gpflow import set_trainable
@@ -111,6 +112,26 @@ class PILCO(gpflow.models.BayesianModel):
         end = time.time()
         for param in mgpr_trainable_params:
             set_trainable(param, True)
+
+    # Save model parameters
+    def save_parameters(self, env_name, suffix="", saving_path=None):
+        if not os.path.exists('models/'):
+            os.makedirs('models/')
+        if saving_path is None:
+            saving_path = "models/pilco+".format(env_name, suffix)
+        
+
+        print('Saving models to {} '.format(saving_path))
+
+    # Load model parameters
+    def load_model(self, actor_path, critic_path):
+        print('Loading models from {} and {}'.format(actor_path, critic_path))
+        if actor_path is not None:
+            self.policy.load_state_dict(torch.load(actor_path))
+        if critic_path is not None:
+            self.critic.load_state_dict(torch.load(critic_path))
+
+
 
     def compute_action(self, x_m):
         return self.controller.compute_action(x_m, tf.zeros([self.state_dim, self.state_dim], float_type))[0]

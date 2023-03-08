@@ -30,3 +30,5 @@ class EnvSampler():
             self.current_state = next_state
 
         return cur_state, action, next_state, reward, terminal, info
+    def env_reset(self):
+        return self.env.reset()

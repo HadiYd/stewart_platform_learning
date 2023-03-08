@@ -31,12 +31,12 @@ stewart:
   # f5_range_value: [-100,100]
   # f6_range_value: [-100,100]
 
-  f1_range_value: [0,10]
-  f2_range_value: [0,10]
-  f3_range_value: [0,10]
-  f4_range_value: [0,10]
-  f5_range_value: [0,10]
-  f6_range_value: [0,10]
+  f1_range_value: [-5,5]
+  f2_range_value: [-5,5]
+  f3_range_value: [-5,5]
+  f4_range_value: [-5,5]
+  f5_range_value: [-5,5]
+  f6_range_value: [-5,5]
 
   reach_goal_reward : 0
   go_very_far_reward: -1

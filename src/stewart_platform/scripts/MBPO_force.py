@@ -19,7 +19,7 @@ from MBPO.tf_models.replay_memory import ReplayMemory
 from MBPO.predict_env import PredictEnv
 from MBPO.sample_env import EnvSampler
 from MBPO.tf_models.constructor import construct_model  #, format_samples_for_training
-from MBPO.MBPO_main import train
+from MBPO.MBPO_main import train , play_trained
 from MBPO.tf_models.sac import SAC
 
 
@@ -28,7 +28,7 @@ def readParser():
     parser = argparse.ArgumentParser(description='MBPO')
     ## For MBPO
 
-    parser.add_argument('--env_name', default="Hopper-v2",
+    parser.add_argument('--env_name', default="tewartPose-v0",
                         help='Mujoco Gym environment (default: Hopper-v2)')
     parser.add_argument('--seed', type=int, default=123456, metavar='N',
                         help='random seed (default: 123456)')
@@ -36,6 +36,8 @@ def readParser():
     parser.add_argument('--use_decay', type=bool, default=True, metavar='G',
                         help='discount factor for reward (default: 0.99)')
 
+
+    # hyper paremters of SAC agent : 
     parser.add_argument('--gamma', type=float, default=0.99, metavar='G',
                         help='discount factor for reward (default: 0.99)')
     parser.add_argument('--tau', type=float, default=0.005, metavar='G',
@@ -53,6 +55,9 @@ def readParser():
                         help='hidden size (default: 256)')
     parser.add_argument('--lr', type=float, default=0.0003, metavar='G',
                         help='learning rate (default: 0.0003)')
+    
+
+    # hper parameters of ensembel model 
 
     parser.add_argument('--num_networks', type=int, default=7, metavar='E',
                         help='ensemble size (default: 7)')
@@ -60,19 +65,21 @@ def readParser():
                         help='elite size (default: 5)')
     parser.add_argument('--pred_hidden_size', type=int, default=200, metavar='E',
                         help='hidden size for predictive model')
+    
+
     parser.add_argument('--reward_size', type=int, default=1, metavar='E',
                         help='environment reward size')
 
-    parser.add_argument('--replay_size', type=int, default=1000000, metavar='N',
+    parser.add_argument('--replay_size', type=int, default=1000, metavar='N',
                         help='size of replay buffer (default: 10000000)')
 
     parser.add_argument('--model_retain_epochs', type=int, default=1, metavar='A',
                         help='retain epochs')
-    parser.add_argument('--model_train_freq', type=int, default=250, metavar='A',
+    parser.add_argument('--model_train_freq', type=int, default=2500, metavar='A',  #250
                         help='frequency of training')
-    parser.add_argument('--rollout_batch_size', type=int, default=100000, metavar='A',
+    parser.add_argument('--rollout_batch_size', type=int, default=1000, metavar='A',
                         help='rollout number M')
-    parser.add_argument('--epoch_length', type=int, default=1000, metavar='A',
+    parser.add_argument('--epoch_length', type=int, default=200, metavar='A',
                         help='steps per epoch')
     parser.add_argument('--rollout_min_epoch', type=int, default=20, metavar='A',
                         help='rollout min epoch')
@@ -82,9 +89,9 @@ def readParser():
                         help='rollout min length')
     parser.add_argument('--rollout_max_length', type=int, default=15, metavar='A',
                         help='rollout max length')
-    parser.add_argument('--num_epoch', type=int, default=1000, metavar='A',
+    parser.add_argument('--num_epoch', type=int, default=200, metavar='A',
                         help='total number of epochs')
-    parser.add_argument('--min_pool_size', type=int, default=1000, metavar='A',
+    parser.add_argument('--min_pool_size', type=int, default=100, metavar='A',
                         help='minimum pool size')
     parser.add_argument('--real_ratio', type=float, default=0.05, metavar='A',
                         help='ratio of env samples / model samples')
@@ -96,9 +103,9 @@ def readParser():
                         help='max training times per step')
     parser.add_argument('--policy_train_batch_size', type=int, default=256, metavar='A',
                         help='batch size for training policy')
-    parser.add_argument('--init_exploration_steps', type=int, default=5000, metavar='A',
+    parser.add_argument('--init_exploration_steps', type=int, default=500, metavar='A',
                         help='exploration steps initially')
-    parser.add_argument('--max_path_length', type=int, default=1000, metavar='A',
+    parser.add_argument('--max_path_length', type=int, default=200, metavar='A',
                         help='max length of path')
 
 
@@ -107,7 +114,10 @@ def readParser():
 
     parser.add_argument('--cuda', default=True, action="store_true",
                         help='run on CUDA (default: True)')
-    parser.add_argument('--run', type=int, default=5)
+    
+    # hper parameters of runs , training or running
+    parser.add_argument('--run', type=int, default=10)
+    parser.add_argument('--load_checkpoint', type=bool, default=False)
     return parser.parse_args()
 
 
@@ -127,7 +137,6 @@ def main(args=None):
     # Intial agent
     agent = SAC(env.observation_space.shape[0], env.action_space, args)
 
-
     # Initial ensemble model
     state_size = np.prod(env.observation_space.shape)
     action_size = np.prod(env.action_space.shape)
@@ -136,7 +145,7 @@ def main(args=None):
                                     num_elites=args.num_elites)
 
     # Predict environments
-    predict_env = PredictEnv(env_model, args.env_name, args.model_type)
+    predict_env = PredictEnv(env_model, args.env_name, args.model_type) # specifying model name and model type : Tensorflow or pytoch
 
     # Initial pool for env
     env_pool = ReplayMemory(args.replay_size)
@@ -148,7 +157,13 @@ def main(args=None):
 
     # Sampler of environment
     env_sampler = EnvSampler(env, max_path_length=args.max_path_length)
-    train(args, env_sampler, predict_env, agent, env_pool, model_pool)
+
+    if args.load_checkpoint:
+        print("play trained")
+        play_trained( args, env,agent,max_episodes=1)
+    else:
+        print("training")
+        train(args, env_sampler, predict_env, agent, env_pool, model_pool)
 
 
 if __name__ == "__main__":

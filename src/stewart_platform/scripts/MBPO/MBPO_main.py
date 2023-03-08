@@ -6,6 +6,7 @@ from itertools import count
 import wandb
 
 import logging
+import pandas as pd
 
 import os
 import os.path as osp
@@ -30,7 +31,7 @@ def exploration_before_start(args, env_sampler, env_pool, agent):
         env_pool.push(cur_state, action, reward, next_state, done)
 
 
-def set_rollout_length(args, epoch_step):
+def set_rollout_length(args, epoch_step):  # k step rollout length
     rollout_length = (min(max(args.rollout_min_length + (epoch_step - args.rollout_min_epoch)
                               / (args.rollout_max_epoch - args.rollout_min_epoch) * (args.rollout_max_length - args.rollout_min_length),
                               args.rollout_min_length), args.rollout_max_length))
@@ -107,10 +108,9 @@ def train_policy_repeats(args, total_step, train_step, cur_step, env_pool, model
 
 
 def train(args, env_sampler, predict_env, agent, env_pool, model_pool):
-    # Train or play the trained one!
-    project_name = "MBPO_force"
+    project_name = "FORCE"
     print("training")
-    wandb.init(name=f'MBPO_run_{args.run}',project=f"Train_and_Save_{project_name}")
+    wandb.init(name=f'MBPO_run_{args.run}', project=f"{project_name}_Train_and_Save")
     total_step = 0
     reward_sum = 0
     rollout_length = 1
@@ -138,14 +138,6 @@ def train(args, env_sampler, predict_env, agent, env_pool, model_pool):
 
             cur_state, action, next_state, reward, done, info = env_sampler.sample(agent)
             env_pool.push(cur_state, action, reward, next_state, done)
-            wandb.log({'Action_f1': list(action)[0] })
-            wandb.log({'Action_f2': list(action)[1] })
-            wandb.log({'Action_f3': list(action)[2] })
-            wandb.log({'Action_f4': list(action)[3] })
-            wandb.log({'Action_f5': list(action)[4] })
-            wandb.log({'Action_f6': list(action)[5] })
-            wandb.log({'heave_z': list(cur_state)[2] })
-            wandb.log({'yaw': list(cur_state)[5] })
             
 
             if len(env_pool) > args.min_pool_size:
@@ -165,14 +157,93 @@ def train(args, env_sampler, predict_env, agent, env_pool, model_pool):
                 done = False
                 test_step = 0
 
-                while (not done) and (test_step != args.max_path_length):
+                while (not done): # and (test_step != args.max_path_length):
                     cur_state, action, next_state, reward, done, info = env_sampler.sample(agent, eval_t=True)
                     episode_reward += reward
-                    test_step += 1
+                    # test_step += 1
+                    wandb.log({'Action_f1': list(action)[0] })
+                    wandb.log({'Action_f2': list(action)[1] })
+                    wandb.log({'Action_f3': list(action)[2] })
+                    wandb.log({'Action_f4': list(action)[3] })
+                    wandb.log({'Action_f5': list(action)[4] })
+                    wandb.log({'Action_f6': list(action)[5] })
+                    wandb.log({'heave_z': list(cur_state)[2] })
+                    wandb.log({'yaw': list(cur_state)[5] })
+
+
                 # logger.record_tabular("total_step", total_step)
                 # logger.record_tabular("sum_reward", sum_reward)
                 # logger.dump_tabular()
+
+                # print(total_step, sum_reward)
                 logging.info("Step Reward: " + str(total_step) + " " + str(episode_reward))
                 print('EP{} EpisodeReward={}'.format(total_step, episode_reward))
                 wandb.log({'Reward': episode_reward})
-                # print(total_step, sum_reward)
+            # Save model 
+            agent.save_model("stewart")
+
+
+def over_shoot(self, yout):
+    return (yout.max()/yout[-1]-1)*100
+
+def rise_time(self,t,yout):
+    return t[next(i for i in range(0,len(yout)-1) if yout[i]>yout[-1]*.90)]-t[0]
+
+def settling_time(self,t,yout):
+    return t[next(len(yout)-i for i in range(2,len(yout)-1) if abs(yout[-i]/yout[-1]-1)>0.02 )]-t[0]
+
+
+
+
+
+def play_trained(args, env, agent,  max_episodes=1):
+    project_name = "FORCE"
+    wandb.init(name=f'MBPO_run_{args.run}', project=f"{project_name}_Run_Trained")
+    wandb.define_metric("Simulation Time (second)")
+    agent.load_model("models/sac_actor_stewart_", "models/sac_critic_stewart_")
+    sim_step = 0.05
+    log_dict = {}
+    step_loop = 1
+    heave_spec = {}
+    yaw_spec = {}
+    start_time = time.time()
+
+    for ep in range(max_episodes):
+        episode_reward, done = 0, False
+        state = env.reset()            
+        t_end = time.time() + 20          
+        while not done or (time.time() < t_end):
+            action = agent.select_action(state)
+            log_dict = {
+                        'Action_f1': list(action)[0], 'Action_f2': list(action)[1]  , 'Action_f3': list(action)[2],
+                        'Action_f3': list(action)[3], 'Action_f5': list(action)[5]  , 'Action_f6': list(action)[5],
+                        'Surge(x)': list(state)[0] ,'Sway(y)': list(state)[1],'Heave(z)': list(state)[2],
+                        'Roll': list(state)[3], 'Pitch': list(state)[4] ,'Yaw': list(state)[5],
+                        "Simulation Time (Seconds)": step_loop*sim_step,
+                        }    
+            wandb.log(log_dict)
+
+
+            # action = np.clip(action , self.action_bound_low , self.action_bound_high)
+            next_state, reward, done, _ = env.step(action)  
+            episode_reward += reward
+            state = next_state
+
+            heave_spec[step_loop*sim_step] = list(state)[2]
+            yaw_spec[step_loop*sim_step]   = list(state)[5]
+            step_loop +=1
+        print('Trained EP{} EpisodeReward={}'.format(ep, episode_reward))
+        wandb.log({'Reward': episode_reward})
+
+        # initialize list of lists
+        time_spec = [['Heave','Over_Shoot', over_shoot(np.array(list(heave_spec.values())))],
+                ['Heave','Rise_Time',  rise_time(np.array(list(heave_spec.keys())), np.array(list(heave_spec.values())))],
+                ['Heave','Settling_Time', settling_time(np.array(list(heave_spec.keys())), np.array(list(heave_spec.values())))],
+                ['Yaw','Over_Shoot', over_shoot(np.array(list(yaw_spec.values())))],
+                ['Yaw','Rise_Time',  rise_time(np.array(list(yaw_spec.keys())), np.array(list(yaw_spec.values())))],
+                ['Yaw','Settling_Time', settling_time(np.array(list(yaw_spec.keys())), np.array(list(yaw_spec.values())))]]
+        
+        # Save the required time domain specifications in a pandas Data frame
+        spec_df = pd.DataFrame(time_spec, columns=['State', 'Specification', 'Value'])
+        wandb.log({f"Specification_DDPG_run_{args.run}": spec_df})
+    print("Total Time to exacute: ", time.time() - start_time)
