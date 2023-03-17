@@ -383,7 +383,7 @@ def main():
     agent = Agent(env_name)
 
     # Train or play the trained one!
-    project_name = "Feedforward_Control"
+    project_name = "FORCE"
     if args.load_checkpoint:
         wandb.init(name=f'A3_run_{args.run}', project=f"{project_name}_Run_Trained")
         agent.load_models_weights()
@@ -391,7 +391,7 @@ def main():
     else:
         print("training")
         wandb.init(name=f'A3_run_{args.run}', project=f"{project_name}_Train_and_Save")
-        agent.train(max_episodes=200)
+        agent.train(max_episodes=300)
 
 
 if __name__ == "__main__":

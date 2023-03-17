@@ -320,7 +320,7 @@ def main():
 
 
     # Train or play the trained one!
-    project_name = "Feedforward_Control"
+    project_name = "FORCE"
     if args.load_checkpoint:
         wandb.init(name=f'PPO_run_{args.run}', project=f"{project_name}_Run_Trained")
         agent.load_models_weights()
