@@ -111,11 +111,12 @@ def train(args, env_sampler, predict_env, agent, env_pool, model_pool):
     project_name = "FORCE"
     print("training")
     wandb.init(name=f'MBPO_run_{args.run}', project=f"{project_name}_Train_and_Save")
+
+    exploration_before_start(args, env_sampler, env_pool, agent)
+
     total_step = 0
     reward_sum = 0
     rollout_length = 1
-    exploration_before_start(args, env_sampler, env_pool, agent)
-
     for epoch_step in range(args.num_epoch):
         start_step = total_step
         train_policy_steps = 0

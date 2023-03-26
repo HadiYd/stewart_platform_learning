@@ -25,6 +25,7 @@ def main(args=None):
 
     rospy.init_node('stewart_gym_MBPO')
     env_name = 'StewartPose-v0'
+
     if args is None:
         args = readParser()
 
@@ -42,10 +43,11 @@ def main(args=None):
                                     num_elites=args.num_elites)
 
     # Predict environments
-    predict_env = PredictEnv(env_model, args.env_name, args.model_type) # specifying model name and model type : Tensorflow or pytoch
+    predict_env = PredictEnv(env_model, env_name, args.model_type) # specifying model name and model type : Tensorflow or pytoch
 
     # Initial pool for env
     env_pool = ReplayMemory(args.replay_size)
+    
     # Initial pool for model
     rollouts_per_epoch = args.rollout_batch_size * args.epoch_length / args.model_train_freq
     model_steps_per_epoch = int(1 * rollouts_per_epoch)

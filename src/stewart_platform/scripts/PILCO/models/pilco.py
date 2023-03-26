@@ -1,5 +1,8 @@
 import numpy as np
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 import tensorflow as tf
+
 import gpflow
 import pandas as pd
 import time
@@ -9,6 +12,7 @@ from .smgpr import SMGPR
 from .. import controllers
 from .. import rewards
 import os
+import pickle
 
 float_type = gpflow.config.default_float()
 from gpflow import set_trainable
@@ -50,33 +54,56 @@ class PILCO(gpflow.models.BayesianModel):
         reward = self.predict(self.m_init, self.S_init, self.horizon)[2]
         return -reward
 
-    def optimize_models(self, maxiter=200, restarts=1):
+    def optimize_models(self,save_model=False,load_model = False,  maxiter=200, restarts=1):
         '''
         Optimize GP models
         '''
+        print("\n\n######################## OPTIMIZING MODEL ............... ########################\n")
         self.mgpr.optimize(restarts=restarts)
         # Print the resulting model parameters
         # ToDo: only do this if verbosity is large enough
-        lengthscales = {}; variances = {}; noises = {};
-        i = 0
-        for model in self.mgpr.models:
-            lengthscales['GP' + str(i)] = model.kernel.lengthscales.numpy()
-            variances['GP' + str(i)] = np.array([model.kernel.variance.numpy()])
-            noises['GP' + str(i)] = np.array([model.likelihood.variance.numpy()])
-            i += 1
-        print('-----Learned models------')
-        pd.set_option('precision', 3)
-        print('---Lengthscales---')
-        print(pd.DataFrame(data=lengthscales))
-        print('---Variances---')
-        print(pd.DataFrame(data=variances))
-        print('---Noises---')
-        print(pd.DataFrame(data=noises))
+        # lengthscales = {}; variances = {}; noises = {};
 
-    def optimize_policy(self, maxiter=50, restarts=1):
+        # model_num = 1
+        # gp_models = {}
+        # for model in self.mgpr.models:
+        #     best_params = {
+        #         "lengthscales" : model.kernel.lengthscales,
+        #         "k_variance" : model.kernel.variance,
+        #         "l_variance" : model.likelihood.variance}
+        #     gp_models[f"model_{model_num}"] = best_params
+        #     lengthscales['GP' + str(model_num)] = model.kernel.lengthscales.numpy()
+        #     variances['GP' + str(model_num)] = np.array([model.kernel.variance.numpy()])
+        #     noises['GP' + str(model_num)] = np.array([model.likelihood.variance.numpy()])
+        #     model_num += 1
+
+        # print('-----Learned models------')
+        # pd.set_option('precision', 3)
+        # print('---Lengthscales---')
+        # print(pd.DataFrame(data=lengthscales))
+        # print('---Variances---')
+        # print(pd.DataFrame(data=variances))
+        # print('---Noises---')
+        # print(pd.DataFrame(data=noises))
+
+        if save_model:
+            if not os.path.exists('models/pilco_mgpr/'):
+                os.makedirs('models/pilco_mgpr/')
+            self.mgpr.save_model('models/pilco_mgpr/')
+            print("Saved optimized model parameters.")
+
+
+    def load_model(self):
+        self.mgpr.load_trained('models/pilco_mgpr/')
+        print("Loaded optimized model parameters.")
+
+            
+
+    def optimize_policy(self, save_policy=False, maxiter=50, restarts=1):
         '''
         Optimize controller's parameter's
         '''
+        print("\n\n######################## OPTIMIZING POLICY ............. ########################")
         start = time.time()
         mgpr_trainable_params = self.mgpr.trainable_parameters
         for param in mgpr_trainable_params:
@@ -110,26 +137,38 @@ class PILCO(gpflow.models.BayesianModel):
         for i,param in enumerate(self.trainable_parameters):
             param.assign(best_parameter_values[i])
         end = time.time()
+
+        for param in mgpr_trainable_params:
+            set_trainable(param, True)
+        
+        if save_policy:
+            if not os.path.exists('models/pilco_policy/'):
+                os.makedirs('models/pilco_policy/')
+            filename = 'models/pilco_policy/' + 'best_param_values.pickle'
+            with open(filename, 'wb') as handle:
+                pickle.dump(best_parameter_values, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+
+
+    def load_policy(self, saved_policy_path ='models/pilco_policy/'):
+        mgpr_trainable_params = self.mgpr.trainable_parameters
+        for param in mgpr_trainable_params:
+            set_trainable(param, False)
+
+        file_path = saved_policy_path +  'best_param_values.pickle'
+        with open(file_path, 'rb') as file:
+            best_param_values = pickle.load(file)
+        for i,param in enumerate(self.trainable_parameters):
+            param.assign(best_param_values[i])
+
         for param in mgpr_trainable_params:
             set_trainable(param, True)
 
-    # Save model parameters
-    def save_parameters(self, env_name, suffix="", saving_path=None):
-        if not os.path.exists('models/'):
-            os.makedirs('models/')
-        if saving_path is None:
-            saving_path = "models/pilco+".format(env_name, suffix)
-        
+        print("Loaded policy paramters.")
 
-        print('Saving models to {} '.format(saving_path))
+  
 
-    # Load model parameters
-    def load_model(self, actor_path, critic_path):
-        print('Loading models from {} and {}'.format(actor_path, critic_path))
-        if actor_path is not None:
-            self.policy.load_state_dict(torch.load(actor_path))
-        if critic_path is not None:
-            self.critic.load_state_dict(torch.load(critic_path))
 
 
 

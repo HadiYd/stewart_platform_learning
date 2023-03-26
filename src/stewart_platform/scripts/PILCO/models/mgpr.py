@@ -1,9 +1,12 @@
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 import tensorflow as tf
 from tensorflow_probability import distributions as tfd
 import gpflow
 from gpflow.utilities import to_default_float
 import numpy as np
 float_type = gpflow.config.default_float()
+import pickle
 
 def randomize(model, mean=1, sigma=0.01):
     model.kernel.lengthscales.assign(
@@ -69,11 +72,25 @@ class MGPR(gpflow.Module):
                     best_params["k_lengthscales"] = model.kernel.lengthscales
                     best_params["k_variance"] = model.kernel.variance
                     best_params["l_variance"] = model.likelihood.variance
-                    # import pdb; pdb.set_trace()
                     best_loss = model.training_loss()
             model.kernel.lengthscales.assign(best_params["lengthscales"])
             model.kernel.variance.assign(best_params["k_variance"])
             model.likelihood.variance.assign(best_params["l_variance"])
+
+    def save_model(self, filepath):
+        for i, model in enumerate(self.models):
+            filename = filepath + f'gp_mpdel_{i+1}.pickle'
+            param_temp = gpflow.utilities.parameter_dict(model)
+            with open(filename, 'wb') as handle:
+                pickle.dump(param_temp, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+    def load_trained(self, filepath):
+        for i, model in enumerate(self.models):
+            filename = filepath + f'gp_mpdel_{i+1}.pickle'
+            with open(filename, 'rb') as file:
+                param_temp = pickle.load(file)
+                gpflow.utilities.multiple_assign(model, param_temp)
 
     def predict_on_noisy_inputs(self, m, s):
         iK, beta = self.calculate_factorizations()
