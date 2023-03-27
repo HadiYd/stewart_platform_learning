@@ -73,9 +73,12 @@ class MGPR(gpflow.Module):
                     best_params["k_variance"] = model.kernel.variance
                     best_params["l_variance"] = model.likelihood.variance
                     best_loss = model.training_loss()
-            model.kernel.lengthscales.assign(best_params["lengthscales"])
-            model.kernel.variance.assign(best_params["k_variance"])
-            model.likelihood.variance.assign(best_params["l_variance"])
+            try:
+                model.kernel.lengthscales.assign(best_params["lengthscales"])
+                model.kernel.variance.assign(best_params["k_variance"])
+                model.likelihood.variance.assign(best_params["l_variance"])
+            except:
+                print("pass")
 
     def save_model(self, filepath):
         for i, model in enumerate(self.models):

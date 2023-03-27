@@ -86,7 +86,7 @@ def train(args=None):
         pilco.optimize_policy(save_policy=True)        
        
         print(f"######## rollout num: {rollouts}  - Run with optimized model and policy")
-        pilco.load_policy()
+        # pilco.load_policy()
         X_new, Y_new, _, _ = rollout(env=env, pilco=pilco, random=False, timesteps= max_episod_timestep )
         # Update dataset
         X = np.vstack((X, X_new)); Y = np.vstack((Y, Y_new))
@@ -106,10 +106,13 @@ def play_trained(args=None):
 
     # Select controller 
     controller = RbfController(state_dim=state_dim, control_dim=control_dim, num_basis_functions=5)
-    X = []; Y = [];
+        # Initial random rollouts to generate a dataset
+    X,Y, _, _ = rollout(env=env, pilco=None,  random=True, timesteps= max_episod_timestep)
     pilco = PILCO((X, Y), controller=controller, horizon=20)
     pilco.load_model()
     pilco.load_policy()
+
+    print(" PLAYING")
 
     X_new, Y_new, _, _ = rollout(env=env, pilco=pilco, random=False, timesteps=max_episod_timestep )
     print("DONE Playing")
@@ -120,11 +123,12 @@ if __name__ == "__main__":
     project_name = "FORCE"
 
     if args.load_checkpoint:
+        print("play trained.")
         # wandb.init(name=f'PILCO_run_{args.run}',project=f"{project_name}_Run_Trained")
         play_trained()
     else:
         print("training")
-        # wandb.init(name=f'PILCO_run_{args.run}', project=f"{project_name}_Train_and_Save")
+        wandb.init(name=f'PILCO_run_{args.run}', project=f"{project_name}_Train_and_Save")
         train()
 
 

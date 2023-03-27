@@ -2,7 +2,7 @@ import numpy as np
 from gpflow import config
 from gym import make
 float_type = config.default_float()
-# import wandb
+import wandb
 
 
 def rollout(env, pilco, timesteps, verbose=False, random=False, SUBS=1, render=False):
@@ -13,18 +13,18 @@ def rollout(env, pilco, timesteps, verbose=False, random=False, SUBS=1, render=F
         for timestep in range(timesteps):
             if render: env.render()
             u = policy(env, pilco, x, random)
-            # wandb.log({'Action_f1': list(u)[0] })
-            # wandb.log({'Action_f2': list(u)[1] })
-            # wandb.log({'Action_f3': list(u)[2] })
-            # wandb.log({'Action_f4': list(u)[3] })
-            # wandb.log({'Action_f5': list(u)[4] })
-            # wandb.log({'Action_f6': list(u)[5] })
+            wandb.log({'Action_f1': list(u)[0] })
+            wandb.log({'Action_f2': list(u)[1] })
+            wandb.log({'Action_f3': list(u)[2] })
+            wandb.log({'Action_f4': list(u)[3] })
+            wandb.log({'Action_f5': list(u)[4] })
+            wandb.log({'Action_f6': list(u)[5] })
             for i in range(SUBS):
                 x_new, r, done, _ = env.step(u)
-                # wandb.log({'heave_z': list(x_new)[2] })
-                # wandb.log({'yaw': list(x_new)[5] })
+                wandb.log({'heave_z': list(x_new)[2] })
+                wandb.log({'yaw': list(x_new)[5] })
                 ep_return_full += r
-                # wandb.log({'Reward': ep_return_full})
+                wandb.log({'Reward': ep_return_full})
                 if done: break
                 if render: env.render()
             if verbose:
