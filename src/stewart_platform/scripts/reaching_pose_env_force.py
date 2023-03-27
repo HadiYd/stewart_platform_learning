@@ -107,7 +107,6 @@ class PoseSetEnv(stewart_env_force.StewartEnv):
     def _set_init_pose(self):
         """Sets the Robot in its init pose
         """
-        # self.set_pid_values(1000,0.01,100)
         self.set_pid_values(self.proper, self.integr, self.deriv)
         self.set_poistion_joints(self.ini_joints)
         return True

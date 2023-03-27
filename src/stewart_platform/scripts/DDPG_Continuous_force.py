@@ -345,7 +345,7 @@ def main():
     agent = Agent(env)
     
     # Train or play the trained one!
-    project_name = "FORCE"
+    project_name = "FORCE_revised"
 
     # play_constant_pid =False
     # if play_constant_pid:
