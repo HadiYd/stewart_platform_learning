@@ -53,6 +53,12 @@ class PoseSetEnv(stewart_env_force.StewartEnv):
         """
         self.sim_time = rospy.get_time()
 
+        # tuned parameters
+        self.proper =  rospy.get_param("/gazebo_controller_init/propor")
+        self.integr = rospy.get_param("/gazebo_controller_init/integr")
+        self.deriv = rospy.get_param("/gazebo_controller_init/deriv")
+        self.ini_joints = rospy.get_param("/gazebo_controller_init/init_legs_length")        
+
         # reaching task parameters ( we want the end effector to reach the below pose as a task )
         self.reach_x = rospy.get_param("/reaching_task/reach_x")
         self.reach_y = rospy.get_param("/reaching_task/reach_y")
@@ -102,10 +108,9 @@ class PoseSetEnv(stewart_env_force.StewartEnv):
         """Sets the Robot in its init pose
         """
         # self.set_pid_values(1000,0.01,100)
-        # self.set_poistion_joints(self.ini_joints)
-        # self.set_pid_values(self.proper, self.integr, self.deriv)
+        self.set_pid_values(self.proper, self.integr, self.deriv)
+        self.set_poistion_joints(self.ini_joints)
         return True
-
 
 
     def _init_env_variables(self):
