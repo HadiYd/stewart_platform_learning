@@ -397,9 +397,11 @@ def main():
     # Train or play the trained one!
     project_name = "Final_with_Time_Domain_Spec_damping_3"
 
-    play_constant_pid =False
+    play_constant_pid =True
     if play_constant_pid:
-        wandb.init(name=f'Empirical_2',project=f"Run_Trained_{project_name}")
+        project_name = 'FORCE_tunned_PID'
+        wandb.init(name=f'Emprical_run_1', project=f"{project_name}_Run_Trained_new_Task")
+        #wandb.init(name=f'Empirical_2',project=f"Run_Trained_{project_name}")
         print("Play constant PID values.")
         agent.play_constant(max_episodes=1,P_gain=100, I_gain=60, D_gain=1)
 

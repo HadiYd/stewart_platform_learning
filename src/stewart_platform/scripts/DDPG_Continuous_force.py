@@ -26,7 +26,7 @@ parser.add_argument('--batch_size', type=int, default=64)
 parser.add_argument('--tau', type=float, default=0.001)
 parser.add_argument('--train_start', type=int, default=2000)
 parser.add_argument('--run', type=int, default=6)
-parser.add_argument('--load_checkpoint', type=bool, default=False)
+parser.add_argument('--load_checkpoint', type=bool, default=True)
 
 
 args = parser.parse_args()
@@ -270,7 +270,7 @@ class Agent:
         for ep in range(max_episodes):
             episode_reward, done = 0, False
             state = self.env.reset()            
-            t_end = time.time() + 20          
+            t_end = time.time() + 30          
             while not done or (time.time() < t_end):
                 action = self.actor.get_action(state)
                 log_dict = {
@@ -345,13 +345,7 @@ def main():
     agent = Agent(env)
     
     # Train or play the trained one!
-    project_name = "FORCE_revised"
-
-    # play_constant_pid =False
-    # if play_constant_pid:
-    #     wandb.init(name=f'Empirical_2',project=f"Run_Trained_{project_name}")
-    #     print("Play constant PID values.")
-    #     agent.play_constant(max_episodes=1,P_gain=100, I_gain=60, D_gain=1)
+    project_name = "FORCE_tunned_PID"
 
     if args.load_checkpoint:
         wandb.init(name=f'DDPG_run_{args.run}',project=f"{project_name}_Run_Trained")
@@ -361,7 +355,7 @@ def main():
     else:
         print("training")
         wandb.init(name=f'DDPG_run_{args.run}',project=f"{project_name}_Train_and_Save")
-        agent.train(max_episodes=200)
+        agent.train(max_episodes=150)
     
 
 if __name__ == "__main__":

@@ -27,7 +27,7 @@ parser.add_argument('--clip_ratio', type=float, default=0.1)
 parser.add_argument('--lmbda', type=float, default=0.95)
 parser.add_argument('--epochs', type=int, default=3)
 parser.add_argument('--run', type=int, default=1)
-parser.add_argument('--load_checkpoint', type=bool, default=False)
+parser.add_argument('--load_checkpoint', type=bool, default=True)
 
 
 args = parser.parse_args()
@@ -262,7 +262,7 @@ class Agent:
         for ep in range(max_episodes):
             episode_reward, done = 0, False
             state = self.env.reset()  
-            t_end = time.time() + 20         
+            t_end = time.time() + 30         
             while not done or (time.time() < t_end):
                 _, action = self.actor.get_action(state)
                 log_dict = {
@@ -320,7 +320,7 @@ def main():
 
 
     # Train or play the trained one!
-    project_name = "FORCE"
+    project_name = "FORCE_tunned_PID"
     if args.load_checkpoint:
         wandb.init(name=f'PPO_run_{args.run}', project=f"{project_name}_Run_Trained")
         agent.load_models_weights()

@@ -108,7 +108,7 @@ def train_policy_repeats(args, total_step, train_step, cur_step, env_pool, model
 
 
 def train(args, env_sampler, predict_env, agent, env_pool, model_pool):
-    project_name = "FORCE"
+    project_name = "FORCE_tunned_PID"
     print("training")
     wandb.init(name=f'MBPO_run_{args.run}', project=f"{project_name}_Train_and_Save")
 
@@ -184,25 +184,22 @@ def train(args, env_sampler, predict_env, agent, env_pool, model_pool):
             agent.save_model("stewart")
 
 
-def over_shoot(self, yout):
+def over_shoot( yout):
     return (yout.max()/yout[-1]-1)*100
 
-def rise_time(self,t,yout):
+def rise_time(t,yout):
     return t[next(i for i in range(0,len(yout)-1) if yout[i]>yout[-1]*.90)]-t[0]
 
-def settling_time(self,t,yout):
+def settling_time(t,yout):
     return t[next(len(yout)-i for i in range(2,len(yout)-1) if abs(yout[-i]/yout[-1]-1)>0.02 )]-t[0]
 
 
-
-
-
 def play_trained(args, env, agent,  max_episodes=1):
-    project_name = "FORCE"
+    project_name = "FORCE_tunned_PID"
     wandb.init(name=f'MBPO_run_{args.run}', project=f"{project_name}_Run_Trained")
     wandb.define_metric("Simulation Time (second)")
     agent.load_model("models/sac_actor_stewart_", "models/sac_critic_stewart_")
-    sim_step = 0.05
+    sim_step = 0.01 # 0.05
     log_dict = {}
     step_loop = 1
     heave_spec = {}
@@ -212,7 +209,7 @@ def play_trained(args, env, agent,  max_episodes=1):
     for ep in range(max_episodes):
         episode_reward, done = 0, False
         state = env.reset()            
-        t_end = time.time() + 20          
+        t_end = time.time() + 30          
         while not done or (time.time() < t_end):
             action = agent.select_action(state)
             log_dict = {

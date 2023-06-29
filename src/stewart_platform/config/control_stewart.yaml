@@ -46,7 +46,15 @@ stewart:
 reaching_task:
   reach_x: 0
   reach_y: 0
-  reach_z: 1.2  
+  reach_z: 1 
   reach_roll: 0
-  reach_pitch: 0
-  reach_yaw: 30
+  reach_pitch: 30
+  reach_yaw: 0
+
+# reaching_task:
+#   reach_x: 0
+#   reach_y: 0
+#   reach_z: 1.2  
+#   reach_roll: 0
+#   reach_pitch: 0
+#   reach_yaw: 30

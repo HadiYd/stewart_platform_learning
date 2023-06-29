@@ -65,7 +65,7 @@ def readParser():
                         help='rollout min length')
     parser.add_argument('--rollout_max_length', type=int, default=15, metavar='A',
                         help='rollout max length')
-    parser.add_argument('--num_epoch', type=int, default=200, metavar='A',
+    parser.add_argument('--num_epoch', type=int, default=100, metavar='A',
                         help='total number of epochs')
     parser.add_argument('--min_pool_size', type=int, default=100, metavar='A',
                         help='minimum pool size')
@@ -93,5 +93,5 @@ def readParser():
     
     # hper parameters of runs , training or running
     parser.add_argument('--run', type=int, default=10)
-    parser.add_argument('--load_checkpoint', type=bool, default=False)
+    parser.add_argument('--load_checkpoint', type=bool, default=True)
     return parser.parse_args()

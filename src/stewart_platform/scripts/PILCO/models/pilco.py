@@ -54,12 +54,12 @@ class PILCO(gpflow.models.BayesianModel):
         reward = self.predict(self.m_init, self.S_init, self.horizon)[2]
         return -reward
 
-    def optimize_models(self,save_model=False,load_model = False,  maxiter=200, restarts=1):
+    def optimize_models(self,save_model=False,load_model = False,  maxiter=10, restarts=1):
         '''
         Optimize GP models
         '''
         print("\n\n######################## OPTIMIZING MODEL ............... ########################\n")
-        self.mgpr.optimize(restarts=restarts)
+        self.mgpr.optimize(restarts=restarts, maxiter=maxiter)
         # Print the resulting model parameters
         # ToDo: only do this if verbosity is large enough
         # lengthscales = {}; variances = {}; noises = {};
@@ -99,7 +99,7 @@ class PILCO(gpflow.models.BayesianModel):
 
             
 
-    def optimize_policy(self, save_policy=False, maxiter=50, restarts=1):
+    def optimize_policy(self, save_policy=False, maxiter=10, restarts=1):
         '''
         Optimize controller's parameter's
         '''
@@ -108,17 +108,27 @@ class PILCO(gpflow.models.BayesianModel):
         mgpr_trainable_params = self.mgpr.trainable_parameters
         for param in mgpr_trainable_params:
             set_trainable(param, False)
-
+            
         if not self.optimizer:
+            print("optimize policy : NOT optimizer")
             self.optimizer = gpflow.optimizers.Scipy()
             # self.optimizer = tf.optimizers.Adam()
-            self.optimizer.minimize(self.training_loss, self.trainable_variables, options=dict(maxiter=maxiter))
+            try:
+                self.optimizer.minimize(self.training_loss, self.trainable_variables, options=dict(maxiter=maxiter))
+            except: 
+                print("Skipped policy optimization ...")
             # self.optimizer.minimize(self.training_loss, self.trainable_variables)
         else:
-            self.optimizer.minimize(self.training_loss, self.trainable_variables, options=dict(maxiter=maxiter))
+            print("optimize policy : optimizer")
+            # self.optimizer = gpflow.optimizers.Scipy()
+            try: 
+                self.optimizer.minimize(self.training_loss, self.trainable_variables, options=dict(maxiter=maxiter))
+                end = time.time()
+                print("Controller's optimization: done in %.1f seconds with reward=%.3f." % (end - start, self.compute_reward()))
+            except:
+                print("Skipped policy optimization ...")
             # self.optimizer.minimize(self.training_loss, self.trainable_variables)
-        end = time.time()
-        print("Controller's optimization: done in %.1f seconds with reward=%.3f." % (end - start, self.compute_reward()))
+
         restarts -= 1
 
         best_parameter_values = [param.numpy() for param in self.trainable_parameters]

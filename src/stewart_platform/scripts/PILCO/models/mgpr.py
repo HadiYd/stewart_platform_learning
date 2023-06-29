@@ -47,18 +47,28 @@ class MGPR(gpflow.Module):
             else:
                 self.models[i].data = (data[0], data[1][:, i:i+1])
 
-    def optimize(self, restarts=1):
+    def optimize(self, maxiter=20, restarts=1):
         if len(self.optimizers) == 0:  # This is the first call to optimize();
             for model in self.models:
                 # Create an gpflow.train.ScipyOptimizer object for every model embedded in mgpr
                 optimizer = gpflow.optimizers.Scipy()
-                optimizer.minimize(model.training_loss, model.trainable_variables)
+                optimizer.minimize(model.training_loss, model.trainable_variables, options=dict(maxiter=maxiter))
                 self.optimizers.append(optimizer)
+                print("optimize call for the first time")
         else:
+            model_num = 1
             for model, optimizer in zip(self.models, self.optimizers):
-                optimizer.minimize(model.training_loss, model.trainable_variables)
-
+                try:
+                    optimizer.minimize(model.training_loss, model.trainable_variables)
+                    print( gpflow.utilities.print_summary(model));
+                except:
+                    print("passeed optimizer without optimiztion")
+                print(f"Model number {model_num} optimization:")
+                model_num += 1
+        model_num = 1
         for model, optimizer in zip(self.models, self.optimizers):
+
+            param_temp = gpflow.utilities.parameter_dict(model)
             best_params = {
                 "lengthscales" : model.kernel.lengthscales,
                 "k_variance" : model.kernel.variance,
@@ -78,7 +88,8 @@ class MGPR(gpflow.Module):
                 model.kernel.variance.assign(best_params["k_variance"])
                 model.likelihood.variance.assign(best_params["l_variance"])
             except:
-                print("pass")
+                print(f"Problem in model {model_num}")
+            model_num += 1
 
     def save_model(self, filepath):
         for i, model in enumerate(self.models):
